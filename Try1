@@ -205,3 +205,9 @@ fc = 0.2; FRECUENCIA DE CORTE NOMALIZADA = fcorte/fs
 B1 = fir1(14,fc*2,rectwin(15),'low'); EL TAMAÑO DE LA VENTANA ES EL nº ord +1
 RESPUESTA EN FRECUENCIA con 512 pts en la fft
 [H1, W1] = freqz(B1,1,512);
+
+FRECUENCIA FUNDAMENTAL
+N = 2^nextpow2(length(x)*2)
+FFTx = fft(x,N);    transformada de fourier de N puntos
+FFTx = FFTx(1:end/2) la primera mitad del vector porque es simétrico
+[max1,idx1] = max(abs(ftyframe1)) max1 = valor del maximo, idx1 = posicion del maximo en el vector
