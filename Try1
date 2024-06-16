@@ -1,0 +1,207 @@
+Retardador
+function y = retardo(x,m)
+  N = length(x);  %obtiene el tamaño de x
+  y = zeros(1,N)  %crea un vector del tamaño de x
+
+  if (m<N)       % si m>N, la salida vale ceros y no hay que hacer nada
+    y(m+1:end) = x(1:end-m);
+  end    
+end
+
+Retardador Bloques
+function [bloque_ret, new_state] = retardador_bloques(bloque, m, state)
+
+if isempty(state)
+    state = zeros(m,1);
+end
+
+%Generar salida bloque_ret a partir de state y bloque
+bloque_ret = [state(:) ; bloque(1:end-m)];
+
+%Generar actualizacion del estado new_state para los siguientes bloques
+new_state = bloque(end-m+1:end);
+
+end
+
+Media 
+mean(x)
+
+Potencia
+mean(x.^2)
+
+Diezmador
+M = factor de diezmado
+y = x(1:M:end)
+
+Interpolador
+L = factor de interpolado
+y = zeros(length(x)*L - (L-1)) %crea un vector de zeros
+y(1:L:end) = x    %inserta los valores de x en las posciones correspondientes
+
+FILTRO FIR
+
+L = factor interpolado
+M = factor diezmado
+
+fc = min(1/(2*L),1/(2*M));    frecuencia de corte del filtro
+N = orden del filtro
+
+Coeficientes del filtro fir
+B = fir1(N,2*fc,'low")  %filtro paso bajo FRECUENCIA DE CORTE x2
+
+Respuesta en frecuencia Freqz
+[H,W] = freqz(B,1)
+
+Convertir W a frecuencia normalizada
+f = W/(2*pi)
+
+Representar filtro
+plot(f,abs(H))
+
+Pasar H a dB
+HdB = 20*log10(abs(H))
+
+RECUERDA!!!
+INTERPOLAR --> FILTAR (con la fc que corresponda) --> DIEZMAR
+
+Filtrar una señal con un FIR
+y = filter(B,1,x)  x es la señal, B son los coeficientes de fir1
+
+REDONDEOS
+ceil = hacia arriba
+floor = hacia abajo
+round = hacia el entero mas cerano
+
+LIMITADOR
+y = max( umbral_inferior, min( x , umbral_superior));
+
+CALCULAR FFT
+L = length(x) longitud de la señal x
+N = 2^nextpow2(L*2) siguiente potencia de 2 del doble del tamaño de la señal
+
+Xfft = abs(fft(x,N)) valor absoluto de la fft de N puntos
+Xfft = fftshift(Xfft) pasa las frecuencias del rango [0.5 1] a [-0.5 0]
+
+Vector de frecuencas de f que corresponde al resultado de la FFT
+paso = fs/N
+f = (-fs/2):paso:((fs-paso)/2);
+
+
+CONVOLUCIÓN CIRCULAR
+
+conv_circ = ifft(fft(h,N).*fft(x,N)
+h filtro
+x señal
+N numero de puntos de la fft, la siguiente potencia de 2 del doble de la mayor Lx o Lh
+
+CONVOLUCION LINEAL
+if N<(lx+lh-1)
+    N = lx+lh-1;
+end
+x = [x;zeros(N-lx,1)];
+h = [h;zeros(N-lh,1)];
+
+conv_lin = ifft(fft(x,N).*(fft(h,N)));
+
+FRECUENCIA PRINCIPAL
+1) hacer la fft
+2) f = 0:(fs/N):(fs-1)/N
+3) [A , B]  = max(X(1:N/2)); encontrar las coordenadas (x,y) del punto maximo entre 0 y 0.5 de la fft
+4) freq = f(B)
+
+ECONTRAR LA FRECUENCIA FUNDAMENTAL A PARTIR DE 5 ARMONICOS
+kinicio = round((finicio*N)/fs);
+    kfin = round((ffin*N)/fs);
+    
+    % Para cada valor de k en el intervalo [kinicio,kfin], sumar el modulo de las FFT 
+    % que correspondan a los 5 primeros armónicos y encontrar su valor máximo
+    % El índice que corresponde a dicho valor máximo será kmax_val (usar este nombre para la variable). 
+    % Se pueden usar bucles. 
+    suma = 0;
+    for k = kinicio:kfin
+        Armonicos = X(k+1) + X(k*2+1) + X(k*3+1) + X(k*4+1) + X(k*5+1);
+        
+        if Armonicos > suma
+            suma = Armonicos;
+            kmax_val = k;
+        end
+    end
+   
+    % Calcular la frecuencia fundamental a partir del valor hallado kmax_val
+    f_fund = (kmax_val*fs)/N;
+
+CORRELACION CRIZADA
+    X = fft(x,N);
+    Y = fft(y,N);
+    Yconj  = conj(Y);
+    
+    Rxy = ifft(X.*Yconj);
+    
+% Desplaza circularmente la correlación con fftshift
+    Rxy = fftshift(Rxy);
+% Elimina ceros al inicio y al final para que tenga longitud 2*M-1
+    L = length(Rxy)/2;
+    
+    Rxy = Rxy(L-(M-1) +1 :L+(M-1)+1);
+    
+% Genera el vector de lags con la misma estructura y longitud que Rxy (columna)
+    lags = (-(M-1)) : (M-1);
+    
+    lags = lags.';
+
+FILTROS IIR
+% Especificaciones comunes
+fm = 2000;  frecuencia de muestreo
+fp = 200;  banda de paso
+fs = 400;  banda elimnada
+Rp = 5;   % en dB   atenuación en la banda de paso
+Rs = 35;  % en dB   atenuación en la banda eliminatoria
+
+Wp = fp/(fm/2); %banda de paso normalizada
+Ws = fs/(fm/2); %banda de corte normalizada
+
+% Filtro de Butterworth
+
+[n1 Wn] = buttord(Wp,Ws,Rp,Rs);
+
+[B1, A1] = butter(n1,Wn,'low');
+
+% Respuesta en frecuencia (N=512, valor por defecto)
+[H1, W1] = freqz(B1,A1,512);
+%Filtro de cheb1
+
+[n2 Wn] = cheb1ord(Wp,Ws,Rp,Rs);
+
+[B2, A2] = cheby1(n2,Rp,Wp,'low');
+
+% Respuesta en frecuencia (N=512, valor por defecto)
+[H2, W2] = freqz(B2,A2,512);
+%Filtro de cheb2
+
+[n3 Wn] = cheb2ord(Wp,Ws,Rp,Rs);
+
+[B3, A3] = cheby2(n3,Rs,Wn,'low');
+
+% Respuesta en frecuencia  (N=512, valor por defecto)
+[H3, W3] = freqz(B3,A3,512);
+%Filtro elliptico
+
+[n4 Wn] = ellipord(Wp,Ws,Rp,Rs);
+
+[B4, A4] = ellip(n4,Rp,Rs,Wn,'low');
+
+% Respuesta en frecuencia  (N=512, valor por defecto)
+[H4, W4] = freqz(B4,A4,512);
+
+CONVERSION W A Hz
+fa = W*fm/(2*pi);
+
+Hdb = 20*log10(abs(H))
+
+COEFICIENTES DE LOS FILTROS
+
+fc = 0.2; FRECUENCIA DE CORTE NOMALIZADA = fcorte/fs
+
+B1 = fir1(14,fc*2,rectwin(15),'low'); EL TAMAÑO DE LA VENTANA ES EL nº ord +1
+RESPUESTA EN FRECUENCIA con 512 pts en la fft
+[H1, W1] = freqz(B1,1,512);
